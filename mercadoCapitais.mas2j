@@ -1,0 +1,21 @@
+/** 
+ *	TCC - Sistema Multi-Agentes Aplicado à Estratégias do Mercado de Capitais
+ *	@author Bruno Tavares
+ *	@date 12/04/2011 
+ */
+MAS mercadoCapitais {
+	
+	//define infraestrutura
+    infrastructure: Centralised
+	
+	//define ambiente
+	environment: src.mas.MercadoEnvironment
+	
+	//define controle de execução
+	//executionControl: src.mas.MercadoController
+	
+	//define agentes
+    agents:
+        bovespa agentClass src.mas.BovespaAgent;
+        investidor#1 agentClass src.mas.InvestidorAgent;
+}
