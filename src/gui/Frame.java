@@ -1,241 +1,232 @@
-package src.gui;
+package gui;
 
+import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Component;
-import java.awt.Dimension;
+import java.awt.Container;
 import java.awt.FlowLayout;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
 import javax.swing.BorderFactory;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JSlider;
-import javax.swing.JSpinner;
+import javax.swing.JScrollPane;
 import javax.swing.JTextField;
-import javax.swing.SpinnerNumberModel;
-import javax.swing.event.ChangeEvent;
-import javax.swing.event.ChangeListener;
+
+import mas.MercadoEnvironment;
+import misc.Config;
+import misc.Text;
+import strategies.PriceCrossStrategy;
+import strategies.Strategy;
+import strategies.enums.TipoMedia;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  
-public class Frame extends JFrame implements ActionListener, ChangeListener {
+public class Frame extends JFrame implements ActionListener {
 
 	private static final long serialVersionUID = -1837978148962289782L;
-	private JCheckBox chbEstrategia1, chbEstrategia2, chbEstrategia3;
-	private JSlider sldEstrategia1Media, sldEstrategia2Media1, sldEstrategia2Media2;
-	private JLabel lblEstrategia1Media, lblEstrategia2Media1, lblEstrategia2Media2;
-	private JSpinner spnEstrategia1Variacao, spnEstrategia2Variacao1, spnEstrategia2Variacao2;
+	private MercadoEnvironment environment;
+	private JPanel agentsPane;
+	
+	private final int FRAME_WIDTH = 800;
+	private final int FRAME_HEIGHT = 600;
 	
 //inits
 	
-	public Frame()
+	public Frame(MercadoEnvironment environment)
 	{
+		this.environment = environment;
+
+		//panel target
+		JPanel target = new JPanel();
+		target.setLayout(new BorderLayout());
+		
+		//panel agents
+		target.add(this.initAgentsPane(), BorderLayout.CENTER);
+		
+		//panel reference
+		JPanel south = new JPanel();
+		south.setLayout(new BorderLayout());
+		south.add(this.initReferencePane(),BorderLayout.CENTER);
+		target.add(south, BorderLayout.SOUTH);
+		
+		//button
+		JButton btnInit = new JButton("Iniciar");
+		btnInit.setActionCommand("iniciar");
+		btnInit.addActionListener(this);	
+		south.add(btnInit, BorderLayout.SOUTH);
+		
+		//scroll pane
+		JScrollPane scrollPane = new JScrollPane(target);
+		this.getContentPane().setLayout(new BorderLayout());
+		this.getContentPane().add(scrollPane, BorderLayout.CENTER);
+		
 		//frame
-		this.setTitle("TCC Bruno Tavares - Sistema Multi-Agentes Aplicado à Estratégias do Mercado de Capitais");
-		this.setSize(600, 400);
-		this.getContentPane().setLayout(new BoxLayout(this.getContentPane(), BoxLayout.PAGE_AXIS));
-		this.getContentPane().add(this.initPainelEstrategias());
-		this.getContentPane().add(this.initPainelMedias());
-		this.getContentPane().add(this.initBotaoIniciar());
+		this.setTitle(Text.FRAME_TITLE);
+		this.setSize(this.FRAME_WIDTH, this.FRAME_HEIGHT);
+		this.setExtendedState(this.getExtendedState()|JFrame.MAXIMIZED_BOTH);
+		this.setLocationRelativeTo(null);
+		this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		this.setVisible(true);
 	}
 	
-	private Component initPainelEstrategias()
+	private Component initAgentsPane()
 	{
-		//fieldset estratégias
-		JPanel panelEstrategias = new JPanel();
-		panelEstrategias.setBorder(BorderFactory.createTitledBorder("Estratégias"));
-		panelEstrategias.setLayout(new BoxLayout(panelEstrategias, BoxLayout.PAGE_AXIS));
-		panelEstrategias.setPreferredSize(new Dimension(this.getContentPane().getWidth(), 300));
+		agentsPane = new JPanel();
+		agentsPane.setBorder(BorderFactory.createTitledBorder(Text.TITLE_AGENTS_PANEL));
+		agentsPane.setLayout(new GridLayout(Config.INVESTORS_QUANTITY, 1));
+		JComboBox comboStrategies;
 		
-		//checkboxes
-		this.chbEstrategia1 = new JCheckBox("Cruzamento de média com preço", true);
-		this.chbEstrategia2 = new JCheckBox("Cruzamento entre 2 médias", true);
-		this.chbEstrategia3 = new JCheckBox("Cruzamento triplo de médias", true);
-		this.chbEstrategia1.setAlignmentX(Component.LEFT_ALIGNMENT);
-		this.chbEstrategia2.setAlignmentX(Component.LEFT_ALIGNMENT);
-		this.chbEstrategia3.setAlignmentX(Component.LEFT_ALIGNMENT);
-		
-		//adiciona
-		panelEstrategias.add(this.chbEstrategia1);
-		panelEstrategias.add(this.initPainelEstrategias1Configuracoes());
-		panelEstrategias.add(this.chbEstrategia2);
-		panelEstrategias.add(this.initPainelEstrategias2Configuracoes(1));
-		panelEstrategias.add(this.initPainelEstrategias2Configuracoes(2));
-		panelEstrategias.add(this.chbEstrategia3);
-		
-		//retorna
-		return panelEstrategias;
-	}
-	
-	private Component initPainelEstrategias1Configuracoes()
-	{
-		//painel configuracao
-		FlowLayout layout = new FlowLayout();
-		layout.setAlignment(FlowLayout.LEFT);
-		
-		JPanel panelConfig = new JPanel();
-		panelConfig.setLayout(layout);
-	
-		JLabel lblDe = new JLabel("Média de");
-		this.lblEstrategia1Media = new JLabel("20");
-		JLabel lblAte = new JLabel("dias, com variação +-");
-		
-		this.sldEstrategia1Media = new JSlider(JSlider.HORIZONTAL, 10, 100, 20);
-		this.sldEstrategia1Media.addChangeListener(this);
-		this.sldEstrategia1Media.setMajorTickSpacing(10);
-		this.sldEstrategia1Media.setMinorTickSpacing(1);
-		this.sldEstrategia1Media.setPaintTicks(true);
-		this.sldEstrategia1Media.setPaintLabels(true);
-		
-		this.spnEstrategia1Variacao = new JSpinner(new SpinnerNumberModel(5,2,10,1));
-		
-		//align
-		panelConfig.setAlignmentX(Component.LEFT_ALIGNMENT);
-		lblDe.setAlignmentX(Component.LEFT_ALIGNMENT);
-		this.sldEstrategia1Media.setAlignmentX(Component.LEFT_ALIGNMENT);
-		this.lblEstrategia1Media.setAlignmentX(Component.LEFT_ALIGNMENT);
-		lblAte.setAlignmentX(Component.LEFT_ALIGNMENT);
-		this.spnEstrategia1Variacao.setAlignmentX(Component.LEFT_ALIGNMENT);
-		
-		//adiciona
-		panelConfig.add(lblDe);
-		panelConfig.add(this.sldEstrategia1Media);
-		panelConfig.add(this.lblEstrategia1Media);
-		panelConfig.add(lblAte);
-		panelConfig.add(this.spnEstrategia1Variacao);
-		
-		//retorna
-		return panelConfig;
-	}
-	
-	private Component initPainelEstrategias2Configuracoes(int panelIndex)
-	{
-		//painel configuracao
-		FlowLayout layout = new FlowLayout();
-		layout.setAlignment(FlowLayout.LEFT);
-		JPanel panelConfig = new JPanel();
-		panelConfig.setLayout(layout);
-		
-		JLabel lblDe;
-		JLabel lblAte = new JLabel("dias, com variação +-");
-		
-		if(panelIndex == 1)
+		for(int i = 1 ; i <= Config.INVESTORS_QUANTITY ; i++)
 		{
-			lblDe = new JLabel("Média rápida de");
+			JPanel agentPane = new JPanel();
+			agentPane.setLayout(new FlowLayout(FlowLayout.LEADING));
 			
-			this.sldEstrategia2Media1 = new JSlider(JSlider.HORIZONTAL, 10, 30, 20);
-			this.sldEstrategia2Media1.addChangeListener(this);
-			this.sldEstrategia2Media1.setMajorTickSpacing(10);
-			this.sldEstrategia2Media1.setMinorTickSpacing(1);
-			this.sldEstrategia2Media1.setPaintTicks(true);
-			this.sldEstrategia2Media1.setPaintLabels(true);
+			if(i != 1){
+				agentPane.setBorder(BorderFactory.createMatteBorder(1, 0, 0, 0, Color.LIGHT_GRAY));
+			}
 			
-			this.spnEstrategia2Variacao1 = new JSpinner(new SpinnerNumberModel(5,2,10,1));
-			this.lblEstrategia2Media1 = new JLabel("20");
+			comboStrategies = createCombo("comboStrategies",new Object[]{
+				Text.STRATEGY_PRICE_CROSSING,
+				Text.STRATEGY_AVERAGE_CROSSING,
+				Text.STRATEGY_TRIPLE_CROSSING
+			});
 			
-			this.sldEstrategia2Media1.setAlignmentX(Component.LEFT_ALIGNMENT);
-			this.spnEstrategia2Variacao1.setAlignmentX(Component.LEFT_ALIGNMENT);
-			this.lblEstrategia2Media1.setAlignmentX(Component.LEFT_ALIGNMENT);
+			agentPane.add(new JLabel(i+"."));
+			agentPane.add(comboStrategies);
 			
-			panelConfig.add(lblDe);
-			panelConfig.add(this.sldEstrategia2Media1);
-			panelConfig.add(this.lblEstrategia2Media1);
-			panelConfig.add(lblAte);
-			panelConfig.add(this.spnEstrategia2Variacao1);
-		}
-		else
-		{
-			lblDe = new JLabel("Média lenta de  ");
-			this.sldEstrategia2Media2 = new JSlider(JSlider.HORIZONTAL, 30, 100, 40);
-			this.sldEstrategia2Media2.addChangeListener(this);
-			this.sldEstrategia2Media2.setMajorTickSpacing(10);
-			this.sldEstrategia2Media2.setMinorTickSpacing(1);
-			this.sldEstrategia2Media2.setPaintTicks(true);
-			this.sldEstrategia2Media2.setPaintLabels(true);
+			this.onComboStrategiesSelect(comboStrategies);
 			
-			this.spnEstrategia2Variacao2 = new JSpinner(new SpinnerNumberModel(5,2,10,1));
-			this.lblEstrategia2Media2 = new JLabel("40");
-			
-			this.sldEstrategia2Media2.setAlignmentX(Component.LEFT_ALIGNMENT);
-			this.lblEstrategia2Media2.setAlignmentX(Component.LEFT_ALIGNMENT);
-			this.spnEstrategia2Variacao2.setAlignmentX(Component.LEFT_ALIGNMENT);
-			
-			panelConfig.add(lblDe);
-			panelConfig.add(this.sldEstrategia2Media2);
-			panelConfig.add(this.lblEstrategia2Media2);
-			panelConfig.add(lblAte);
-			panelConfig.add(this.spnEstrategia2Variacao2);
+			agentsPane.add(agentPane);
 		}
 		
-		//align
-		panelConfig.setAlignmentX(Component.LEFT_ALIGNMENT);
-		lblDe.setAlignmentX(Component.LEFT_ALIGNMENT);
-		lblAte.setAlignmentX(Component.LEFT_ALIGNMENT);
-		
-		
-		//retorna
-		return panelConfig;
+		return agentsPane;
 	}
-	
-	private Component initPainelMedias()
+
+	private Component initReferencePane()
 	{
-		//medias
-		JPanel panelMedias = new JPanel();
-		panelMedias.setBorder(BorderFactory.createTitledBorder("Médias Consideradas"));
-		panelMedias.setLayout(new BoxLayout(panelMedias, BoxLayout.PAGE_AXIS));
+		JPanel referencePane = new JPanel();
+		referencePane.setBorder(BorderFactory.createTitledBorder(Text.REFERENCE));
+		FlowLayout layout = new FlowLayout();
+		layout.setAlignment(FlowLayout.LEADING);
+		referencePane.setLayout(layout);
 		
-		/*
-		JCheckBox chbSimples = new JCheckBox("Média Móvel Simples - MMS", true);
-		JCheckBox chbExponencial = new JCheckBox("Média Móvel Exponencial - MME", true);
+		JLabel label = new JLabel();
+		label.setText(Text.REFERENCE_HTML);
 		
-		panelMedias.add(chbSimples);
-		panelMedias.add(chbExponencial);*/
-		
-		return panelMedias;
-	}
-	
-	private Component initBotaoIniciar()
-	{
-		JButton btnIniciar = new JButton("Iniciar");
-		btnIniciar.setActionCommand("iniciar");
-		btnIniciar.addActionListener(this);	
-		
-		return btnIniciar;
+		referencePane.add(label);
+		return referencePane;
 	}
 	
 	@Override
 	public void actionPerformed(ActionEvent e) 
 	{
-		if(e.getActionCommand().equals("Iniciar"))
+		if(e.getActionCommand().equals("iniciar"))
 		{
-			this.onBtnIniciarClick();
+			this.onBtnInitClick();
+		}
+		else if(e.getActionCommand().equals("comboStrategies"))
+		{
+			this.onComboStrategiesSelect((JComboBox)e.getSource());
 		}
 	}
 	
-	@Override
-	public void stateChanged(ChangeEvent e) 
+	private void onComboStrategiesSelect(JComboBox comboStrategies)
 	{
-		if(e.getSource() == this.sldEstrategia1Media)
-		{
-			this.lblEstrategia1Media.setText(this.sldEstrategia1Media.getValue() + "");
-		}
-		else if(e.getSource() == this.sldEstrategia2Media1)
-		{
-			this.lblEstrategia2Media1.setText(this.sldEstrategia2Media1.getValue() + "");
-		}
-		else if(e.getSource() == this.sldEstrategia2Media2)
-		{
-			this.lblEstrategia2Media2.setText(this.sldEstrategia2Media2.getValue() + "");
-		}
-	}
-
-	private void onBtnIniciarClick()
-	{
+		//remove items
+		JPanel agentPane = (JPanel) comboStrategies.getParent();
+		Component[] cmps = agentPane.getComponents();
+		JTextField txtPeriod;
 		
+		for(int i = 2; i < cmps.length ; i++)
+		{
+			agentPane.remove(cmps[i]);
+		}
+		
+		String strategy = (String) comboStrategies.getSelectedItem();
+		
+		int averageQuantity = strategy == Text.STRATEGY_PRICE_CROSSING ? 1 :
+			strategy == Text.STRATEGY_AVERAGE_CROSSING ? 2 : 3;
+		
+	    for(int i = 0 ; i < averageQuantity ; i++)
+	    {
+	    	agentPane.add(
+				createCombo("comboAverageKind" + i,new Object[]{
+					Text.AVERAGE_SIMPLE,
+					Text.AVERAGE_EXPONENCIAL
+				})
+			);
+	    	
+	    	txtPeriod = new JTextField(3);
+	    	txtPeriod.setText("20");
+	    	agentPane.add(txtPeriod);
+	    }
+	    
+	    agentPane.revalidate();
+	    agentPane.repaint();
 	}
 
+	private void onBtnInitClick()
+	{
+		Component[] cmps, agentsPanelLine = agentsPane.getComponents();
+		String strategyRef;
+		Strategy strategy;
+		
+		//for each agent config
+		for(int i = 0 ; i < agentsPanelLine.length ; i++)
+		{
+			//build strategy
+			cmps = ((Container) agentsPanelLine[i]).getComponents();
+			strategyRef = (String) ((JComboBox) cmps[1]).getSelectedItem();
+			strategy = null;
+			
+			if(strategyRef == Text.STRATEGY_PRICE_CROSSING)
+			{
+				strategy = new PriceCrossStrategy(
+					this.getAverageKind((String) ((JComboBox) cmps[2]).getSelectedItem()), 
+					Integer.valueOf((String) ((JTextField) cmps[3]).getText())
+				);
+			}
+			else if(strategyRef == Text.STRATEGY_AVERAGE_CROSSING)
+			{
+				
+			}
+			else if(strategyRef == Text.STRATEGY_TRIPLE_CROSSING)
+			{
+				
+			}
+			
+			//create agent
+			this.environment.createInvestor(strategy); 
+		}
+	}
 	
+	private JComboBox createCombo(String actionCommand, Object[] data) 
+	{
+		JComboBox combo = new JComboBox(data);
+		
+		combo.setSelectedIndex(0);
+		combo.setActionCommand(actionCommand);
+		combo.addActionListener(this);
+		
+		return combo;
+	}
+	
+	private TipoMedia getAverageKind(String averageKind)
+	{
+		if(averageKind == Text.AVERAGE_EXPONENCIAL)
+		{
+			return TipoMedia.SIMPLES;
+		}
+		else if(averageKind == Text.AVERAGE_SIMPLE)
+		{
+			return TipoMedia.EXPONENCIAL;
+		}
+		
+		throw new NotImplementedException();
+	}
 }

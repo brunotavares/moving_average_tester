@@ -1,8 +1,17 @@
-// Agent investidor in project mercadoCapitais.mas2j
+/** 
+ *	TCC - Sistema Multi-Agentes Aplicado à Estratégias do Mercado de Capitais
+ *	@author Bruno Tavares
+ *	@date 12/04/2011 
+ */
++cotacoes(A)[source(B)] 
+	<- 	.abolish(capital(C,D));
+		actions.investir;
+		investimento_finalizado.
 
-/* Initial beliefs and rules */
-
-/* Initial goals */
-
-/* Plans */
-+pregao_fechado : true <- .print("o pregão fechou?!").
++pregao_iniciado : true
+	<- 	.abolish(pregao_finalizado);
+		.abolish(cotacoes(_)).
+	
++pregao_finalizado : true
+	<- .abolish(pregao_iniciado);
+		.send(bovespa, askOne, cotacoes(A)).

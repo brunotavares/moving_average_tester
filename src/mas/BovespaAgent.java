@@ -1,26 +1,26 @@
-package src.mas;
+package mas;
 
-import jason.asSemantics.ActionExec;
 import jason.asSemantics.Agent;
 import jason.asSyntax.Literal;
 
 import java.io.File;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Vector;
 import java.util.logging.Logger;
+
+import misc.Debug;
 
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 
-public class BovespaAgent extends Agent {
+public class BovespaAgent extends BaseAgent {
 
 //atributos
 	
 	private Logger logger = Logger.getLogger("bovespa");
 	private HashMap<String, Vector<String[]>> cotacoes;
-	private int cotacaoIndex;
+	private int ciclo, limiteCotacoes;
 	private String[] ativos;
 
 //inits
@@ -28,11 +28,16 @@ public class BovespaAgent extends Agent {
 	@Override
 	public void initAg()
 	{
+		logger.info(Debug.getTime() + " - initAg init");
+		
 		super.initAg();
 		this.cotacoes = new HashMap<String, Vector<String[]>>();
 		this.ativos = new String[]{"PETR4", "VALE5"};
+		this.ciclo = 1;
 		
 		this.initCotacoes();
+		
+		logger.info(Debug.getTime() + " - initAg end");
 	}
 	
 	private void initCotacoes()
@@ -57,6 +62,9 @@ public class BovespaAgent extends Agent {
 			
 			//inicializa vetor
 			Vector<String[]> cotacoesAtivo = new Vector<String[]>();
+			
+			//guarda o limite
+			this.limiteCotacoes = sheet.getRows() - 1;
 			
 			//itera sobre linhas
 			for(int j = 1 ; j < sheet.getRows() ; j++)
@@ -93,65 +101,62 @@ public class BovespaAgent extends Agent {
 			this.cotacoes.put(this.ativos[i], cotacoesAtivo);
 		}
 		
-		logger.info("cotações carregadas");
+		logger.info(Debug.getTime() + " - stocks loaded");
 	}
 
-//overrides
+//listeners
 	
-	@Override
-	public ActionExec selectAction(List<ActionExec> arg0) 
+	public synchronized void onAbrirPregao()
 	{
-		ActionExec actionExec = super.selectAction(arg0);
-		String functor = actionExec.getActionTerm().getFunctor();
-	
-		if(functor.equals("abertura_pregao"))
-		{
-			this.aberturaPregaoAction();
-		}
-		
-		return actionExec;
-	}
-	
-//actions
-	
-	/*
-	 * Carrega a cotação do dia
-	 */
-	public void aberturaPregaoAction()
-	{
-		String data = "", cotacoes = "";
+		boolean primeiro = true;
+		StringBuilder cotacoes = new StringBuilder(this.ativos.length);
+		String[] cotacao;
+		String data = "";
 		
 		//para cada ativo
 		for(int i = 0 ; i < this.ativos.length ; i++)
 		{
 			//busca dados do dia
-			String[] cotacao = this.cotacoes.get(this.ativos[i]).get(this.cotacaoIndex);
-			data = cotacao[0];
-			
-			if(!cotacoes.isEmpty())
+			cotacao = this.cotacoes.get(this.ativos[i]).get(this.ciclo);
+			data =  cotacao[0];
+				
+			if(primeiro)
 			{
-				cotacoes += ",";
+				primeiro = false;
+			}
+			else
+			{
+				cotacoes.append(",");
 			}
 			
-			cotacoes += this.ativos[i] + "|" +
-						cotacao[0] +"|"+
-						cotacao[1] +"|"+
-						cotacao[2] +"|"+
-						cotacao[3] +"|"+
-						cotacao[4];
+			cotacoes.append(this.ativos[i]);
+			cotacoes.append("|");
+			cotacoes.append(data);
+			cotacoes.append("|");		
+			cotacoes.append(cotacao[1]);
+			cotacoes.append("|");
+			cotacoes.append(cotacao[2]);
+			cotacoes.append("|");
+			cotacoes.append(cotacao[3]);
+			cotacoes.append("|");
+			cotacoes.append(cotacao[4]);
 		}
 
 		//define crenca
-		Literal crencaCotacao = Literal.parseLiteral("cotacoes(\""+cotacoes+"\")");	
+		this.addBel(Literal.parseLiteral("cotacoes(\""+cotacoes+"\")"));
 		
-		//adiciona ao agente
-		try {
-			this.addBel(crencaCotacao);
-		} catch (Exception e) {
-			e.printStackTrace();
+		logger.info(Debug.getTime() + " - daily stocks loaded " + data);
+		
+		//aumenta ciclo
+		this.ciclo++;
+	
+		logger.info(Debug.getTime() + " - ciclo="+ this.ciclo + ", limiteCotacoes=" + this.limiteCotacoes);
+		//verifica se acabou as cotacoes
+		if(this.ciclo >= this.limiteCotacoes)
+		{
+			this.delBel(Literal.parseLiteral("executando"));
+			return;
 		}
-				
-		logger.info("consultei cotações do dia " + data);
 	}
 	
 //demais métodos

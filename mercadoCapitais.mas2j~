@@ -9,10 +9,10 @@ MAS mercadoCapitais {
     infrastructure: Centralised
 	
 	//define ambiente
-	environment: mas.MercadoEnvironment(1)
+	environment: mas.MercadoEnvironment
 	
 	//define agentes
     agents:
         bovespa agentClass mas.BovespaAgent;
-		investidor#0 agentClass mas.InvestidorAgent;
+		investidor#1 agentClass mas.InvestidorAgent;
 }
