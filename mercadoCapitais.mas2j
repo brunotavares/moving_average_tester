@@ -5,14 +5,11 @@
  */
 MAS mercadoCapitais {
 	
-	//define infraestrutura
     infrastructure: Centralised
 	
-	//define ambiente
-	environment: mas.MercadoEnvironment(1)
+	environment: mas.MercadoEnvironment(5)
 	
-	//define agentes
     agents:
         bovespa agentClass mas.BovespaAgent;
-		investidor#0 agentClass mas.InvestidorAgent;
+		investor#0 agentClass mas.InvestorAgent;
 }

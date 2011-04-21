@@ -3,10 +3,6 @@
  *	@author Bruno Tavares
  *	@date 12/04/2011 
  */
-//crencas
-executando.
-!pregao.
-
 //planos
 +!pregao : executando
 	<-	.abolish(cotacoes(_));
@@ -21,4 +17,6 @@ executando.
 -!pregao : true 
 	<- .print("finalizando programa");
 		finalizar_programa.
-	
+
+//percepcoes
++executando : true <- !pregao.

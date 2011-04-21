@@ -17,13 +17,16 @@ public class abrir_pregao extends DefaultInternalAction {
     {
     	if(BovespaAgent.isBovespa(ts.getAg()))
     	{
-    		ts.getAg().getLogger().info("===================== " + Debug.getTime() + " - abrir_pregao action init =====================");
-    		
     		BovespaAgent agente = (BovespaAgent) ts.getAg();
-    		agente.onAbrirPregao();
     		
-    		ts.getAg().getLogger().info(Debug.getTime() + " - abrir_pregao action end");
-    		return true;
+    		if(!agente.isFinished())
+    		{
+    			ts.getAg().getLogger().info("===================== " + Debug.getTime() + " - abrir_pregao action init =====================");
+    			agente.onAbrirPregao();
+    			ts.getAg().getLogger().info(Debug.getTime() + " - abrir_pregao action end");
+    			
+    			return true;
+    		}
     	}
     	
     	return false;

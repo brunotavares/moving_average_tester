@@ -1,173 +1,222 @@
 package mas;
 
+import jason.RevisionFailedException;
 import jason.asSemantics.Agent;
 import jason.asSyntax.Literal;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Vector;
 import java.util.logging.Logger;
-
-import misc.Debug;
 
 import jxl.Sheet;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
+import misc.Config;
+import misc.Debug;
+import misc.Text;
+import strategies.Quote;
 
-public class BovespaAgent extends BaseAgent {
+/**
+ * Bovespa Agent (bovespa.als) class
+ * @author Bruno Tavares
+ */
+public class BovespaAgent extends Agent {
 
-//atributos
+//attributes
 	
-	private Logger logger = Logger.getLogger("bovespa");
-	private HashMap<String, Vector<String[]>> cotacoes;
-	private int ciclo, limiteCotacoes;
-	private String[] ativos;
-
-//inits
+	/**
+	 * Logger
+	 */
+	private Logger logger = Logger.getLogger(BovespaAgent.class.getName());
 	
+	/**
+	 * Stock Quotes (e.g. (Quote) stockQuotes[45][42])
+	 */
+	private Object[][] stockQuotes;
+	
+	/**
+	 * Pointer to current quote day. Increased on every auction.
+	 */
+	private int quotesPointer;
+	
+	/**
+	 * True when quotesPointer reaches the limited on Config.QUOTES_QUANTITY
+	 */
+	private boolean finished;
+	
+//initializers
+	
+	/**
+	 * Initializes Agent, pointers, and loading quotes
+	 */
 	@Override
 	public void initAg()
 	{
 		logger.info(Debug.getTime() + " - initAg init");
 		
 		super.initAg();
-		this.cotacoes = new HashMap<String, Vector<String[]>>();
-		this.ativos = new String[]{"PETR4", "VALE5"};
-		this.ciclo = 1;
-		
-		this.initCotacoes();
+		this.quotesPointer = 0;
+		this.initQuotes();
 		
 		logger.info(Debug.getTime() + " - initAg end");
 	}
 	
-	private void initCotacoes()
+	/**
+	 * Load excel quote files (.xls) and parsers data into quotes, loading stockQuotes
+	 * array
+	 */
+	private void initQuotes()
 	{
-		//settings
-		WorkbookSettings settings = new WorkbookSettings();
-		settings.setSuppressWarnings(true); 
+		String stock, date, openPrice, closePrice, maximumPrice, minimumPrice, year;
+		String[] dateArray;
 		
-		//para cada ativo
-		for(int i = 0 ; i < this.ativos.length ; i++)
-		{
-			Workbook workbook = null;
-			//abre planilha
-			try {
-				workbook = Workbook.getWorkbook(new File("cotacoes/"+this.ativos[i]+".xls"), settings);
-			} catch (Exception e) {
-				e.printStackTrace();
-				return;
+		try{
+			//get files
+			String[] quotesFiles = new File(Text.QUOTES_FOLDER).list();
+			
+			if(quotesFiles == null){
+				throw new Exception(Text.EXCEPTION_QUOTES_FOLDER_NOT_FOUND);
 			}
+	
+			//settings
+			WorkbookSettings settings = new WorkbookSettings();
+			settings.setSuppressWarnings(true); 
 			
-			Sheet sheet = workbook.getSheet(0);
+			//initialize vectos
+			Config.STOCKS = new String[quotesFiles.length];
 			
-			//inicializa vetor
-			Vector<String[]> cotacoesAtivo = new Vector<String[]>();
-			
-			//guarda o limite
-			this.limiteCotacoes = sheet.getRows() - 1;
-			
-			//itera sobre linhas
-			for(int j = 1 ; j < sheet.getRows() ; j++)
+			//for each file
+			for(int i = 0 ; i < quotesFiles.length ; i++)
 			{
-				//extrai data
-				String data 		= sheet.getCell(0,j).getContents();
-				String abertura		= sheet.getCell(1,j).getContents();
-				String fechamento	= sheet.getCell(2,j).getContents();
-				String maxima		= sheet.getCell(3,j).getContents();
-				String minima		= sheet.getCell(4,j).getContents();
-				
-				//arruma data
-				String[] dataArray = data.split("/");
-				String ano = dataArray[2].split(" ")[0];
-				if(ano.length() == 2){
-					ano = "20" + ano;
+				//validate extension
+				if(!quotesFiles[i].substring(quotesFiles[i].length() - 4).equals(".xls"))
+				{
+					throw new Exception(String.format(Text.EXCEPTION_INVALID_QUOTE_FILE, quotesFiles[i]));
 				}
-				data = dataArray[0] + "/" + dataArray[1] + "/" + ano;
 				
-				//senão coloca no vetor
-				cotacoesAtivo.add(new String[]{
-					data,
-					abertura.replace(",", "."),
-					fechamento.replace(",", "."),
-					maxima.replace(",", "."),
-					minima.replace(",", "."),
-				});
+				stock = quotesFiles[i].replace(".xls", ""); 
+				
+				//open excel sheet
+				Workbook workbook = Workbook.getWorkbook(new File(Text.QUOTES_FOLDER + "/" + quotesFiles[i]), settings);
+				Sheet sheet = workbook.getSheet(0);
+				
+				//init configs and arrays
+				Config.STOCKS[i] = stock;
+				Config.QUOTES_QUANTITY = sheet.getRows() - 1;
+				
+				if(stockQuotes == null){
+					stockQuotes = new Object[quotesFiles.length][Config.QUOTES_QUANTITY];
+				}
+				
+				//for each line
+				for(int j = 1 ; j <= Config.QUOTES_QUANTITY ; j++)
+				{
+					//extract data
+					date 		= sheet.getCell(0,j).getContents();
+					openPrice	= sheet.getCell(1,j).getContents().replace(",", ".");
+					closePrice	= sheet.getCell(2,j).getContents().replace(",", ".");
+					maximumPrice= sheet.getCell(3,j).getContents().replace(",", ".");
+					minimumPrice= sheet.getCell(4,j).getContents().replace(",", ".");
+					
+					//fix data issues
+					dateArray = date.split("/");
+					year = dateArray[2].split(" ")[0];
+					if(year.length() == 2){
+						year = "20" + year;
+					}
+					date = dateArray[0] + "/" + dateArray[1] + "/" + year;
+					
+					//add to vector
+					stockQuotes[i][j-1] = new Quote(stock, date, openPrice, closePrice, maximumPrice, minimumPrice);
+				}
+				
+				workbook.close();
 			}
 			
-			//fecha planilha
-			workbook.close();
-			
-			//adiciona vetor no hashmap
-			this.cotacoes.put(this.ativos[i], cotacoesAtivo);
+			logger.info(Debug.getTime() + " - stocks loaded");
 		}
-		
-		logger.info(Debug.getTime() + " - stocks loaded");
+		catch(Exception e)
+		{
+			e.printStackTrace();
+		}
 	}
 
+//assessors
+	
+	public boolean isFinished() {
+		return finished;
+	}
+	
 //listeners
 	
+	/**
+	 * Load daily quote using quotesPointer, adds to beliefs base, and then
+	 * increase quotesPointer
+	 */
 	public synchronized void onAbrirPregao()
 	{
-		boolean primeiro = true;
-		StringBuilder cotacoes = new StringBuilder(this.ativos.length);
-		String[] cotacao;
-		String data = "";
-		
-		//para cada ativo
-		for(int i = 0 ; i < this.ativos.length ; i++)
+		if(this.quotesPointer < Config.QUOTES_QUANTITY)
 		{
-			//busca dados do dia
-			cotacao = this.cotacoes.get(this.ativos[i]).get(this.ciclo);
-			data =  cotacao[0];
+			StringBuilder quotesString = new StringBuilder(Config.STOCKS.length);
+			Quote quote;
+			String date = "";
+			
+			//for each stock
+			for(int i = 0 ; i < Config.STOCKS.length ; i++)
+			{
+				//get quotes
+				quote = (Quote) stockQuotes[i][this.quotesPointer];
+					
+				if(i == 0)
+				{
+					date = quote.getDate();
+				}
+				else
+				{
+					quotesString.append(",");
+				}
 				
-			if(primeiro)
-			{
-				primeiro = false;
+				quotesString.append(quote.toString());
 			}
-			else
+	
+			//define belief
+			try {
+				this.addBel(Literal.parseLiteral("cotacoes(\""+quotesString+"\")"));
+			} 
+			catch (RevisionFailedException e) 
 			{
-				cotacoes.append(",");
+				e.printStackTrace();
 			}
 			
-			cotacoes.append(this.ativos[i]);
-			cotacoes.append("|");
-			cotacoes.append(data);
-			cotacoes.append("|");		
-			cotacoes.append(cotacao[1]);
-			cotacoes.append("|");
-			cotacoes.append(cotacao[2]);
-			cotacoes.append("|");
-			cotacoes.append(cotacao[3]);
-			cotacoes.append("|");
-			cotacoes.append(cotacao[4]);
+			logger.info(Debug.getTime() + " - daily stocks loaded " + date);
+			
+			//increase pointer
+			this.quotesPointer++;
+		
+			logger.info(Debug.getTime() + " - ciclo="+ this.quotesPointer + ", limiteCotacoes=" + Config.QUOTES_QUANTITY);
 		}
-
-		//define crenca
-		this.addBel(Literal.parseLiteral("cotacoes(\""+cotacoes+"\")"));
-		
-		logger.info(Debug.getTime() + " - daily stocks loaded " + data);
-		
-		//aumenta ciclo
-		this.ciclo++;
-	
-		logger.info(Debug.getTime() + " - ciclo="+ this.ciclo + ", limiteCotacoes=" + this.limiteCotacoes);
-		//verifica se acabou as cotacoes
-		if(this.ciclo >= this.limiteCotacoes)
+		else
 		{
-			this.delBel(Literal.parseLiteral("executando"));
-			return;
+			this.finished = true;
+			MercadoEnvironment.getInstance().removePercept("bovespa", Literal.parseLiteral("executando"));
+			logger.info(Debug.getTime() + " - removing executando belief");
 		}
 	}
 	
-//demais métodos
+//other methods
 	
-	public static boolean isBovespa(Agent agente)
+	/**
+	 * @see isBovespa
+	 */
+	public static boolean isBovespa(Agent agent)
 	{
-		return isBovespa(agente.getASLSrc());
+		return isBovespa(agent.getASLSrc());
 	}
 	
-	public static boolean isBovespa(String nome)
+	/**
+	 * Verifies if a given agent is Bovespa agent.
+	 */
+	public static boolean isBovespa(String name)
 	{
-		return nome.equals("bovespa.asl") || nome.equals("bovespa");
+		return name.equals("bovespa.asl") || name.equals("bovespa");
 	}
 }

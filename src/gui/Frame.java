@@ -4,14 +4,20 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Container;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JComponent;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -20,29 +26,30 @@ import javax.swing.JTextField;
 
 import mas.MercadoEnvironment;
 import misc.Config;
+import misc.StocksResultsComparator;
 import misc.Text;
 import strategies.PriceCrossStrategy;
+import strategies.Result;
 import strategies.Strategy;
-import strategies.enums.TipoMedia;
+import strategies.enums.AverageKind;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  
 public class Frame extends JFrame implements ActionListener {
 
+//attributes
+	
 	private static final long serialVersionUID = -1837978148962289782L;
-	private MercadoEnvironment environment;
-	private JPanel agentsPane;
+	private JPanel agentsPane, resultsPane, target;
 	
 	private final int FRAME_WIDTH = 800;
 	private final int FRAME_HEIGHT = 600;
 	
 //inits
 	
-	public Frame(MercadoEnvironment environment)
+	public Frame()
 	{
-		this.environment = environment;
-
 		//panel target
-		JPanel target = new JPanel();
+		target = new JPanel();
 		target.setLayout(new BorderLayout());
 		
 		//panel agents
@@ -121,6 +128,8 @@ public class Frame extends JFrame implements ActionListener {
 		referencePane.add(label);
 		return referencePane;
 	}
+
+//overrides
 	
 	@Override
 	public void actionPerformed(ActionEvent e) 
@@ -134,6 +143,8 @@ public class Frame extends JFrame implements ActionListener {
 			this.onComboStrategiesSelect((JComboBox)e.getSource());
 		}
 	}
+
+//listeners
 	
 	private void onComboStrategiesSelect(JComboBox comboStrategies)
 	{
@@ -201,9 +212,65 @@ public class Frame extends JFrame implements ActionListener {
 			}
 			
 			//create agent
-			this.environment.createInvestor(strategy); 
+			MercadoEnvironment.getInstance().createInvestor(strategy); 
 		}
+		
+		//results pane
+		resultsPane = new JPanel();
+		resultsPane.setBorder(BorderFactory.createTitledBorder(Text.TITLE_RESULTS_PANEL));
+		resultsPane.setLayout(new BoxLayout(resultsPane, BoxLayout.Y_AXIS));
+		target.removeAll();
+		resultsPane.add(new JLabel("Aguarde... agentes processando..."));
+		target.add(resultsPane, BorderLayout.CENTER);
+		target.revalidate();
+		target.repaint();
+		
+		//init auction
+		MercadoEnvironment.getInstance().initAuction();
 	}
+	
+	public void onResultsPublished()
+	{
+		Container ct = this.getContentPane();
+		List<Result> results = MercadoEnvironment.getInstance().getResults();
+		String stock = "";
+		Result result;
+		JLabel resultLabel;
+		
+		//clear
+		resultsPane.removeAll();
+		
+		//sort
+		Collections.sort(results, new StocksResultsComparator());
+		
+		//iterate
+		Iterator<Result> it = MercadoEnvironment.getInstance().getResults().iterator();
+		while(it.hasNext())
+		{
+			result = it.next();
+			
+			if(!stock.equals(result.getStock()))
+			{
+				resultLabel = new JLabel(stock = result.getStock());
+				resultLabel.setMaximumSize(new Dimension(Short.MAX_VALUE, 25));
+				resultsPane.add(resultLabel);
+			}
+			
+			resultLabel = new JLabel(String.format(Text.TEXT_RESULT, 
+					result.getAgentName(), 
+					result.getCapital(), 
+					result.getProfitability(),
+					result.getStrategy()
+			));
+			resultLabel.setMaximumSize(new Dimension(Short.MAX_VALUE, 25));
+			resultsPane.add(resultLabel);
+		}
+		
+		((JComponent) this.getContentPane()).revalidate();
+		ct.repaint();
+	}
+
+//other methods
 	
 	private JComboBox createCombo(String actionCommand, Object[] data) 
 	{
@@ -216,15 +283,15 @@ public class Frame extends JFrame implements ActionListener {
 		return combo;
 	}
 	
-	private TipoMedia getAverageKind(String averageKind)
+	private AverageKind getAverageKind(String averageKind)
 	{
-		if(averageKind == Text.AVERAGE_EXPONENCIAL)
+		if(averageKind == Text.AVERAGE_SIMPLE)
 		{
-			return TipoMedia.SIMPLES;
+			return AverageKind.SIMPLE;
 		}
-		else if(averageKind == Text.AVERAGE_SIMPLE)
+		else if(averageKind == Text.AVERAGE_EXPONENCIAL)
 		{
-			return TipoMedia.EXPONENCIAL;
+			return AverageKind.EXPONENCIAL;
 		}
 		
 		throw new NotImplementedException();

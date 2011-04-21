@@ -1,5 +1,4 @@
 package mas;
-// Environment code for project mercadoCapitais.mas2j
 
 import gui.Frame;
 import jason.asSyntax.Literal;
@@ -8,30 +7,22 @@ import jason.environment.Environment;
 import jason.runtime.Settings;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Set;
 import java.util.logging.Logger;
 
 import misc.Config;
 import misc.Debug;
+import strategies.Result;
 import strategies.Strategy;
-
 
 public class MercadoEnvironment extends Environment {
 
-	private Logger logger = Logger.getLogger("mercado");
-	private int quantidadeInvestidores = 0;
-	private int signals = 0;
-	private List<Object[]> resultados = new ArrayList<Object[]>();
+	private Logger logger = Logger.getLogger(MercadoEnvironment.class.getName());
+	private int signals;
+	private List<Result> results;
 	private static MercadoEnvironment instance;
 	private Frame frame;
-	
-//acessores
-	
-	public void setQuantidadeInvestidores(int quantidadeInvestidores) {
-		this.quantidadeInvestidores = quantidadeInvestidores;
-	}
+	private int investorID;
 	
 //overrides
 	
@@ -41,14 +32,17 @@ public class MercadoEnvironment extends Environment {
 		//super
 		super.init(args);
 		
-		//singleton instance
+		//attributes
+		this.results = new ArrayList<Result>();
+		this.signals = 0;
+		this.investorID = 1;
 		instance = this;
 		
 		//configs
 		Config.INVESTORS_QUANTITY = Integer.valueOf(args[0]);
 
 		//gui
-		this.frame = new Frame(this);
+		this.frame = new Frame();
 	}
 	
     @Override
@@ -60,20 +54,20 @@ public class MercadoEnvironment extends Environment {
     	
     	if (action.equals("pregao_fechado")) 
     	{
-    		this.take(this.getEnvironmentInfraTier().getRuntimeServices().getAgentsQty() - 1);
+    		this.assignSignals(this.getEnvironmentInfraTier().getRuntimeServices().getAgentsQty() - 1);
     		this.logger.info(Debug.getTime() + " - investidores atuando " + this.signals);
     		return true;
     	}
     	
     	if(action.equals("investimento_finalizado"))
     	{
-    		this.release();
+    		this.releaseInvestFinished();
     		return true;
     	}
     	
     	if(action.equals("finalizar_programa"))
     	{
-    		this.take(this.getEnvironmentInfraTier().getRuntimeServices().getAgentsQty() - 1);
+    		this.assignSignals(this.getEnvironmentInfraTier().getRuntimeServices().getAgentsQty() - 1);
     		this.addPercept(Literal.parseLiteral("programa_finalizado"));
     		return true;
     	}
@@ -81,110 +75,13 @@ public class MercadoEnvironment extends Environment {
     	return false;
     }
 
-//listeners
-
-    public void onFinalizarPrograma()
-    {
-    	//busca todos agentes
-    	Set<String> nomesAgentes = this.getEnvironmentInfraTier().getRuntimeServices().getAgentsNames();
-    	Iterator<String> it = nomesAgentes.iterator();
-    	String nomeAgente, ativo;
-    	List<Literal> percepcoes;
-    	Iterator<Literal> itp;
-    	Literal percepcao;
-    	String[] capitalAtivo;
-    	float capital;
-    	List<Object[]> resultados = new ArrayList<Object[]>();
-    	
-    	while(it.hasNext())
-    	{
-    		//guarda nome
-    		nomeAgente = it.next();
-    		
-    		//busca percepcoes
-    		percepcoes = this.getPercepts(nomeAgente);
-    		itp = percepcoes.iterator();
-    		
-    		while(itp.hasNext())
-    		{
-    			percepcao = itp.next();
-    			
-    			if(percepcao.getFunctor().equals("capital"))
-    			{
-    				capitalAtivo = percepcao.getTerm(0).toString().replace("\"","").split(",");
-    				ativo = capitalAtivo[0];
-    				capital = Float.parseFloat(capitalAtivo[1]);
-    				
-    				resultados.add(new Object[]{
-    						nomeAgente,
-    						ativo,
-    						capital
-    				});
-    			}
-    		}
-    	}
-    }
+//acessors
     
-//demais métodos
-    
-    public void incrementaInvestidores() 
-    {
-		this.quantidadeInvestidores++;
+    public List<Result> getResults() {
+		return results;
 	}
     
-    public synchronized void take(int signals) 
-    {
-      this.signals = signals;
-      this.notify();
-    }
-
-    public synchronized void release()
-    {
-    	if(this.signals > 0)
-    	{
-    		this.logger.info(Debug.getTime() + " - -1 investidor atuando " + this.signals);
-    		this.signals--;
-    	}
-    	
-    	if(this.signals == 0)
-    	{
-    		this.logger.info(Debug.getTime() + " - investidores_finalizados");
-    		Literal ciclo_acabou = Literal.parseLiteral("ciclo_acabou");
-    		this.removePercept(ciclo_acabou);
-    		this.addPercept(ciclo_acabou);
-			return;
-    	}
-    }
-    
-    public synchronized void releaseFinal()
-    {
-    	if(this.signals > 0)
-    	{
-    		this.logger.info(Debug.getTime() + " - -1 investidor atuando " + this.signals);
-    		this.signals--;
-    	}
-    	
-    	if(this.signals == 0)
-    	{
-    		logger.info("resultados prontos");
-    	}
-    }
-
-    public synchronized void adicionaResultado(Object[] resultado)
-    {
-    	resultados.add(resultado);
-    }
-    
-    public synchronized void avisaInvestidorTerminou()
-    {
-    	this.releaseFinal();
-    }
-    
-    public static MercadoEnvironment getInstance()
-    {
-    	return instance;
-    }
-    private int investorID = 1;
+//other methods
     
 	public void createInvestor(Strategy strategy) 
 	{
@@ -198,9 +95,9 @@ public class MercadoEnvironment extends Environment {
 		try
 		{
 			this.getEnvironmentInfraTier().getRuntimeServices().createAgent(
-					"investidor" + (this.investorID++), // agent name
-					"investidor.asl",       			// AgentSpeak source
-					null,            					// default agent class
+					"investor" + (this.investorID++), 	// agent name
+					"investor.asl",       				// AgentSpeak source
+					"mas.InvestorAgent",            	// default agent class
 					null,            					// default architecture class
 					null,            					// default belief base parameters
 					settings
@@ -211,4 +108,62 @@ public class MercadoEnvironment extends Environment {
 			e.printStackTrace();
 		}
 	}
+    
+    public void initAuction()
+    {
+    	this.addPercept("bovespa", Literal.parseLiteral("executando"));
+    }
+    
+    private synchronized void assignSignals(int signals) 
+    {
+      this.signals = signals;
+      this.notify();
+    }
+
+    public synchronized void releaseInvestFinished()
+    {
+    	if(this.signals > 0)
+    	{
+    		this.logger.info(Debug.getTime() + " - -1 investidor atuando " + this.signals);
+    		this.signals--;
+    	}
+    	
+    	if(this.signals == 0)
+    	{
+    		this.logger.info(Debug.getTime() + " - investidores_finalizados");
+    		Literal cycle_finished = Literal.parseLiteral("ciclo_acabou");
+    		this.removePercept(cycle_finished);
+    		this.addPercept(cycle_finished);
+    	}
+    }
+    
+    public synchronized void releaseExecutionFinished()
+    {
+    	if(this.signals > 0)
+    	{
+    		this.logger.info(Debug.getTime() + " - -1 investidor atuando " + this.signals);
+    		this.signals--;
+    	}
+    	
+    	if(this.signals == 0)
+    	{
+    		logger.info("resultados prontos");
+    		this.frame.onResultsPublished();
+    	}
+    }
+
+    public synchronized void publishResult(Result result)
+    {
+    	results.add(result);
+    }
+    
+    public synchronized void investorFinished()
+    {
+    	this.releaseExecutionFinished();
+    }
+    
+    public static MercadoEnvironment getInstance()
+    {
+    	return instance;
+    }
 }

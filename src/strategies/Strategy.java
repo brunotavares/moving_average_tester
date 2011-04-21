@@ -2,7 +2,7 @@ package strategies;
 
 import java.util.List;
 
-import strategies.enums.Decisao;
+import strategies.enums.Decision;
 
 
 /**
@@ -12,9 +12,9 @@ import strategies.enums.Decisao;
 public interface Strategy {
 
 	/**
-	 * Decide se deve {@link Decisao comprar, vender ou manter} as ações em carteira
+	 * Decide se deve {@link Decision comprar, vender ou manter} as ações em carteira
 	 * @param cotacoes Dados das cotações registradas
-	 * @return {@link Decisao decisão}
+	 * @return {@link Decision decisão}
 	 */
-	public Decisao getDecisao(List<Cotacao> cotacoes);
+	public Decision getDecisao(List<Quote> cotacoes, Object[] strategyState);
 }

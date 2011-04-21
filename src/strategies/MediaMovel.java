@@ -15,7 +15,7 @@ public abstract class MediaMovel {
 	 * @return Valor da média. Caso a lista não seja suficiente (período da média é maior 
 	 * que quantidade de elementos) é retornado 0.00.
 	 */
-	public static float calcular(int periodo, List<Cotacao> cotacoes)
+	public static float calcular(int periodo, List<Quote> cotacoes)
 	{
 		if(cotacoes.size() < periodo){
 			return 0f;
@@ -25,7 +25,7 @@ public abstract class MediaMovel {
 		
 		for(int i = cotacoes.size() - 1, l = 0 ; i != -1 && l < periodo ; l++, i-- )
 		{
-			soma += cotacoes.get(i).getPrecoFechamento();
+			soma += cotacoes.get(i).getClosePrice();
 		}
 		
 		return soma/periodo;
@@ -39,7 +39,7 @@ public abstract class MediaMovel {
 	 * <li>K é constante = {2 ÷ (N+1)}</li></ul>
 	 * @return Valor da média móvel exponencial
 	 */
-	public static float calcularExponencial(int periodo, List<Cotacao> cotacoes) 
+	public static float calcularExponencial(int periodo, List<Quote> cotacoes) 
 	{
 		float k = 2 / (periodo/1);
 		
@@ -57,11 +57,11 @@ public abstract class MediaMovel {
 		{
 			if(mediaAnterior == 0)
 			{
-				media = mediaAnterior = cotacoes.get(i).getPrecoFechamento();
+				media = mediaAnterior = cotacoes.get(i).getClosePrice();
 			}
 			else
 			{
-				media = mediaAnterior + k * (cotacoes.get(i).getPrecoFechamento() - mediaAnterior);
+				media = mediaAnterior + k * (cotacoes.get(i).getClosePrice() - mediaAnterior);
 			}
 		}
 		

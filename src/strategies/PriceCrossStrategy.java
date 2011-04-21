@@ -3,9 +3,9 @@ package strategies;
 import java.util.List;
 import java.util.logging.Logger;
 
-import strategies.enums.Decisao;
-import strategies.enums.PosicaoMedia;
-import strategies.enums.TipoMedia;
+import strategies.enums.Decision;
+import strategies.enums.AveragePosition;
+import strategies.enums.AverageKind;
 
 
 /**
@@ -18,6 +18,11 @@ import strategies.enums.TipoMedia;
 public class PriceCrossStrategy implements Strategy {
 
 	/**
+	 * Logger
+	 */
+	private Logger logger = Logger.getLogger(PriceCrossStrategy.class.getName());
+	
+	/**
 	 * Período para cálculo da média
 	 */
 	private int period;
@@ -25,61 +30,61 @@ public class PriceCrossStrategy implements Strategy {
 	/**
 	 * O tipo da média
 	 */
-	private TipoMedia averageKind;
+	private AverageKind averageKind;
 	
-	/**
-	 * Posição da média resultante da última decisão
-	 */
-	private PosicaoMedia position;
-
-	private Logger logger;
+//initializers
 	
-//inicializadores
-	
-	public PriceCrossStrategy(TipoMedia averageKind, int period)
+	public PriceCrossStrategy(AverageKind averageKind, int period)
 	{
 		this.period = period;
 		this.averageKind = averageKind;
 	}
 	
-//demais métodos
+//overrides
 	
 	@Override
-	public Decisao getDecisao(List<Cotacao> cotacoes) 
+	public Decision getDecisao(List<Quote> cotacoes, Object[] strategyState) 
 	{
-		float ultimoFechamento = cotacoes.size() != 0 ? 
-				cotacoes.get(cotacoes.size()-1).getPrecoFechamento() : 0f;
-		
+		float ultimoFechamento = cotacoes.size() != 0 ? cotacoes.get(cotacoes.size()-1).getClosePrice() : 0f;
 		float mediaMovel = this.calcularMedia(cotacoes);
+		AveragePosition position = (AveragePosition) strategyState[0];
 		
-		logger.info("getDecisao posicao="+this.position+", ultimoFechamento="+ultimoFechamento+", mediaMovel="+mediaMovel);
+		logger.info("getDecisao posicao="+position+", ultimoFechamento="+ultimoFechamento+", mediaMovel="+mediaMovel);
 		
-		if(this.position == PosicaoMedia.ABAIXO && mediaMovel > ultimoFechamento )
+		if(position == AveragePosition.UNDER && mediaMovel > ultimoFechamento )
 		{
-			this.position = PosicaoMedia.ACIMA;
-			return Decisao.COMPRAR;
+			strategyState[0] = AveragePosition.ABOVE;
+			return Decision.BUY;
 		}
-		else if(this.position == PosicaoMedia.ACIMA && mediaMovel < ultimoFechamento)
+		else if(position == AveragePosition.ABOVE && mediaMovel < ultimoFechamento)
 		{
-			this.position = PosicaoMedia.ABAIXO;
-			return Decisao.VENDER;
+			strategyState[0] = AveragePosition.UNDER;
+			return Decision.SELL;
 		}
-		else if(this.position == null)
+		else if(position == null)
 		{
-			this.position = mediaMovel > ultimoFechamento ? PosicaoMedia.ACIMA : PosicaoMedia.ABAIXO;
+			strategyState[0] = mediaMovel > ultimoFechamento ? AveragePosition.ABOVE : AveragePosition.UNDER;
 		}
-		
-		return Decisao.MANTER;
+		              
+		return Decision.KEEP;
 	}
+
+	@Override
+	public String toString() 
+	{
+		return "Cruzamento de Preços " + this.averageKind.toString() + " N("+this.period+")";
+	}
+	
+//other methods
 	
 	/**
 	 * Calcula a média dependendo do tipo (simples ou exponencial)
 	 * @param cotacoes
 	 * @return valor da média
 	 */
-	private float calcularMedia(List<Cotacao> cotacoes)
+	private float calcularMedia(List<Quote> cotacoes)
 	{
-		return this.averageKind == TipoMedia.SIMPLES ? 
+		return this.averageKind == AverageKind.SIMPLE ? 
 				MediaMovel.calcular(this.period, cotacoes) :
 				MediaMovel.calcularExponencial(this.period, cotacoes);
 	}
