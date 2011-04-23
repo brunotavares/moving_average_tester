@@ -43,29 +43,32 @@ public class PriceCrossStrategy implements Strategy {
 //overrides
 	
 	@Override
-	public Decision getDecisao(List<Quote> cotacoes, Object[] strategyState) 
+	public Decision getDecision(List<Quote> cotacoes, Object[] strategyState) 
 	{
 		float ultimoFechamento = cotacoes.size() != 0 ? cotacoes.get(cotacoes.size()-1).getClosePrice() : 0f;
-		float mediaMovel = this.calcularMedia(cotacoes);
+		float mediaMovel = MovingAverage.calculate(this.averageKind, this.period, cotacoes);
 		AveragePosition position = (AveragePosition) strategyState[0];
 		
 		logger.info("getDecisao posicao="+position+", ultimoFechamento="+ultimoFechamento+", mediaMovel="+mediaMovel);
 		
-		if(position == AveragePosition.UNDER && mediaMovel > ultimoFechamento )
+		if(mediaMovel != 0)
 		{
-			strategyState[0] = AveragePosition.ABOVE;
-			return Decision.BUY;
+			if(position == AveragePosition.ABOVE && ultimoFechamento > mediaMovel)
+			{
+				strategyState[0] = AveragePosition.UNDER;
+				return Decision.BUY;
+			}
+			else if(position == AveragePosition.UNDER && ultimoFechamento <= mediaMovel)
+			{
+				strategyState[0] = AveragePosition.ABOVE;
+				return Decision.SELL;
+			}
+			else if(position == null)
+			{
+				strategyState[0] = mediaMovel > ultimoFechamento ? AveragePosition.ABOVE : AveragePosition.UNDER;
+			}
 		}
-		else if(position == AveragePosition.ABOVE && mediaMovel < ultimoFechamento)
-		{
-			strategyState[0] = AveragePosition.UNDER;
-			return Decision.SELL;
-		}
-		else if(position == null)
-		{
-			strategyState[0] = mediaMovel > ultimoFechamento ? AveragePosition.ABOVE : AveragePosition.UNDER;
-		}
-		              
+		
 		return Decision.KEEP;
 	}
 
@@ -73,19 +76,5 @@ public class PriceCrossStrategy implements Strategy {
 	public String toString() 
 	{
 		return "Cruzamento de Preços " + this.averageKind.toString() + " N("+this.period+")";
-	}
-	
-//other methods
-	
-	/**
-	 * Calcula a média dependendo do tipo (simples ou exponencial)
-	 * @param cotacoes
-	 * @return valor da média
-	 */
-	private float calcularMedia(List<Quote> cotacoes)
-	{
-		return this.averageKind == AverageKind.SIMPLE ? 
-				MediaMovel.calcular(this.period, cotacoes) :
-				MediaMovel.calcularExponencial(this.period, cotacoes);
 	}
 }

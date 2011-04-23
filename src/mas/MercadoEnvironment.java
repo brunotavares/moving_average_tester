@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import misc.Config;
 import misc.Debug;
 import strategies.Result;
 import strategies.Strategy;
@@ -38,9 +37,6 @@ public class MercadoEnvironment extends Environment {
 		this.investorID = 1;
 		instance = this;
 		
-		//configs
-		Config.INVESTORS_QUANTITY = Integer.valueOf(args[0]);
-
 		//gui
 		this.frame = new Frame();
 	}

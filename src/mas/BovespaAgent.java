@@ -5,6 +5,7 @@ import jason.asSemantics.Agent;
 import jason.asSyntax.Literal;
 
 import java.io.File;
+import java.util.Vector;
 import java.util.logging.Logger;
 
 import jxl.Sheet;
@@ -71,11 +72,24 @@ public class BovespaAgent extends Agent {
 		
 		try{
 			//get files
-			String[] quotesFiles = new File(Text.QUOTES_FOLDER).list();
+			String[] quotesFiles = new File(Config.QUOTES_FOLDER).list();
 			
 			if(quotesFiles == null){
 				throw new Exception(Text.EXCEPTION_QUOTES_FOLDER_NOT_FOUND);
 			}
+			
+			//validate extension
+			Vector<String> quotesFilesTemp = new Vector<String>(quotesFiles.length);
+			
+			for(int i = 0 ; i < quotesFiles.length ; i++)
+			{
+				if(quotesFiles[i].substring(quotesFiles[i].length() - 4).equals(".xls"))
+				{
+					quotesFilesTemp.add(quotesFiles[i]);
+				}
+			}
+			quotesFiles = new String[quotesFilesTemp.size()];
+			quotesFiles = quotesFilesTemp.toArray(quotesFiles);
 	
 			//settings
 			WorkbookSettings settings = new WorkbookSettings();
@@ -87,16 +101,10 @@ public class BovespaAgent extends Agent {
 			//for each file
 			for(int i = 0 ; i < quotesFiles.length ; i++)
 			{
-				//validate extension
-				if(!quotesFiles[i].substring(quotesFiles[i].length() - 4).equals(".xls"))
-				{
-					throw new Exception(String.format(Text.EXCEPTION_INVALID_QUOTE_FILE, quotesFiles[i]));
-				}
-				
 				stock = quotesFiles[i].replace(".xls", ""); 
 				
 				//open excel sheet
-				Workbook workbook = Workbook.getWorkbook(new File(Text.QUOTES_FOLDER + "/" + quotesFiles[i]), settings);
+				Workbook workbook = Workbook.getWorkbook(new File(Config.QUOTES_FOLDER + "/" + quotesFiles[i]), settings);
 				Sheet sheet = workbook.getSheet(0);
 				
 				//init configs and arrays
@@ -146,8 +154,13 @@ public class BovespaAgent extends Agent {
 		return finished;
 	}
 	
+	public Object[][] getStockQuotes() {
+		return stockQuotes;
+	}
+	
 //listeners
 	
+
 	/**
 	 * Load daily quote using quotesPointer, adds to beliefs base, and then
 	 * increase quotesPointer
@@ -209,7 +222,7 @@ public class BovespaAgent extends Agent {
 	 */
 	public static boolean isBovespa(Agent agent)
 	{
-		return isBovespa(agent.getASLSrc());
+		return agent == null ? false : isBovespa(agent.getASLSrc());
 	}
 	
 	/**
@@ -217,6 +230,6 @@ public class BovespaAgent extends Agent {
 	 */
 	public static boolean isBovespa(String name)
 	{
-		return name.equals("bovespa.asl") || name.equals("bovespa");
+		return name == null ? false : name.equals("bovespa.asl") || name.equals("bovespa");
 	}
 }

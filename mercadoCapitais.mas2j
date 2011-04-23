@@ -7,7 +7,7 @@ MAS mercadoCapitais {
 	
     infrastructure: Centralised
 	
-	environment: mas.MercadoEnvironment(5)
+	environment: mas.MercadoEnvironment
 	
     agents:
         bovespa agentClass mas.BovespaAgent;

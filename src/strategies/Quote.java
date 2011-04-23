@@ -1,6 +1,7 @@
 package strategies;
 
-import misc.Config;
+import java.util.HashMap;
+
 
 /**
  * Classe que representa uma cotação diária de determinado ativo.
@@ -13,7 +14,7 @@ public class Quote {
 	/**
 	 * Preço de Abertura
 	 */
-	private float openPrice; 
+	private float openPrice;
 	
 	/**
 	 * Preço de Abertura
@@ -40,6 +41,16 @@ public class Quote {
 	 */
 	private String stock;
 	
+	/**
+	 * Arithmetical averages values for this quote in different periods
+	 */
+	private HashMap<Integer, Float> arithmeticalAverage;
+	
+	/**
+	 * Exponetial averages values for this quote in different periods
+	 */
+	private HashMap<Integer, Float> exponentialAverage;
+	
 //initializers
 	
 	public Quote(String stock, String date, String openPrice, String closePrice, String maximumPrice, String minimumPrice) 
@@ -50,6 +61,8 @@ public class Quote {
 		this.closePrice = Float.parseFloat(closePrice);
 		this.maximumPrice = Float.parseFloat(maximumPrice);
 		this.minimumPrice = Float.parseFloat(minimumPrice);
+		this.arithmeticalAverage = new HashMap<Integer, Float>();
+		this.exponentialAverage = new HashMap<Integer, Float>();
 	}
 	
 //assessors	
@@ -72,8 +85,8 @@ public class Quote {
 	public float getMinimumPrice() {
 		return minimumPrice;
 	}
-	
-//other methods
+
+//overrides
 	
 	@Override
 	public String toString() 
@@ -84,6 +97,24 @@ public class Quote {
 				this.getClosePrice() + "|" +
 				this.getMaximumPrice() + "|" +
 				this.getMinimumPrice();
+	}
+	
+//other methods
+	
+	public float getArithmeticalAverage(int period) {
+		return arithmeticalAverage.containsKey(period) ? arithmeticalAverage.get(period) : 0f;
+	}
+
+	public float getExponentialAverage(int period) {
+		return exponentialAverage.containsKey(period) ? exponentialAverage.get(period) : 0f;
+	}
+	
+	public void setArithmeticalAverage(int period, float value){
+		arithmeticalAverage.put(period, value);
+	}
+	
+	public void setExponentialAverage(int period, float value){
+		exponentialAverage.put(period, value);
 	}
 	
 	public static Quote valueOf(String string)

@@ -15,6 +15,5 @@ public abstract class Text {
 	public static final String TITLE_RESULTS_PANEL = "Resultados";
 	public static final String TEXT_RESULT = "Agente %s - R$%s (%s) - estratégia %s";
 	public static final String EXCEPTION_QUOTES_FOLDER_NOT_FOUND = "Diretório 'quotes' não encontrado. Por favor crie o diretório e coloque os arquivos .xls de cotações nele.";
-	public static final String QUOTES_FOLDER = "quotes";
 	public static final String EXCEPTION_INVALID_QUOTE_FILE = "Arquivo de cotações inválido %s";
 }

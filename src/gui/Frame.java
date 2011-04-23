@@ -28,9 +28,11 @@ import mas.MercadoEnvironment;
 import misc.Config;
 import misc.StocksResultsComparator;
 import misc.Text;
+import strategies.AveragesCrossStrategy;
 import strategies.PriceCrossStrategy;
 import strategies.Result;
 import strategies.Strategy;
+import strategies.TripleCrossStrategy;
 import strategies.enums.AverageKind;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
  
@@ -152,6 +154,7 @@ public class Frame extends JFrame implements ActionListener {
 		JPanel agentPane = (JPanel) comboStrategies.getParent();
 		Component[] cmps = agentPane.getComponents();
 		JTextField txtPeriod;
+		String[] averageValues = new String[]{"20","50","100"};
 		
 		for(int i = 2; i < cmps.length ; i++)
 		{
@@ -173,7 +176,7 @@ public class Frame extends JFrame implements ActionListener {
 			);
 	    	
 	    	txtPeriod = new JTextField(3);
-	    	txtPeriod.setText("20");
+	    	txtPeriod.setText(averageValues[i]);
 	    	agentPane.add(txtPeriod);
 	    }
 	    
@@ -204,11 +207,23 @@ public class Frame extends JFrame implements ActionListener {
 			}
 			else if(strategyRef == Text.STRATEGY_AVERAGE_CROSSING)
 			{
-				
+				strategy = new AveragesCrossStrategy(
+					this.getAverageKind((String) ((JComboBox) cmps[4]).getSelectedItem()), 
+					this.getAverageKind((String) ((JComboBox) cmps[2]).getSelectedItem()), 
+					Integer.valueOf((String) ((JTextField) cmps[5]).getText()), 
+					Integer.valueOf((String) ((JTextField) cmps[3]).getText())
+				);
 			}
 			else if(strategyRef == Text.STRATEGY_TRIPLE_CROSSING)
 			{
-				
+				strategy = new TripleCrossStrategy( 
+					this.getAverageKind((String) ((JComboBox) cmps[2]).getSelectedItem()), 
+					Integer.valueOf((String) ((JTextField) cmps[3]).getText()), 
+					this.getAverageKind((String) ((JComboBox) cmps[4]).getSelectedItem()), 
+					Integer.valueOf((String) ((JTextField) cmps[5]).getText()), 
+					this.getAverageKind((String) ((JComboBox) cmps[6]).getSelectedItem()), 
+					Integer.valueOf((String) ((JTextField) cmps[7]).getText())
+				);
 			}
 			
 			//create agent

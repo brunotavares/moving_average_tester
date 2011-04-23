@@ -4,5 +4,6 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="/Developer/Applications/Jason-1.3.4/lib/jason.jar"/>
 	<classpathentry kind="lib" path="lib/jxl.jar"/>
+	<classpathentry kind="lib" path="lib/junit-4.8.2.jar" sourcepath="/Users/btbruno_/.m2/repository/junit/junit/4.8.2/junit-4.8.2-sources.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

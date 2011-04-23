@@ -16,5 +16,5 @@ public interface Strategy {
 	 * @param cotacoes Dados das cotações registradas
 	 * @return {@link Decision decisão}
 	 */
-	public Decision getDecisao(List<Quote> cotacoes, Object[] strategyState);
+	public Decision getDecision(List<Quote> cotacoes, Object[] strategyState);
 }

@@ -64,6 +64,12 @@ public class InvestorAgent extends Agent {
 		this.strategy = (Strategy) (this.getTS().getSettings().getUserParameters().get("strategy"));
 		this.agentName = getTS().getUserAgArch().getAgName();
 	}
+
+//assessors
+	
+	public Custody[] getCustody() {
+		return custody;
+	}
 	
 //listeners
 	
@@ -97,7 +103,7 @@ public class InvestorAgent extends Agent {
  			
  			//get decision
  			logger.info("buscando decisão para " + quote.getStock());
- 			decision = this.strategy.getDecisao(stockQuotes, this.strategyStates[i]);
+ 			decision = this.strategy.getDecision(stockQuotes, this.strategyStates[i]);
  			
  			//update close price
  			this.custody[i].setUltimoPrecoFechamento(quote.getClosePrice());
