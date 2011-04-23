@@ -4,6 +4,7 @@ import gui.Frame;
 import jason.asSyntax.Literal;
 import jason.asSyntax.Structure;
 import jason.environment.Environment;
+import jason.infra.centralised.RunCentralisedMAS;
 import jason.runtime.Settings;
 
 import java.util.ArrayList;
@@ -22,6 +23,13 @@ public class MercadoEnvironment extends Environment {
 	private static MercadoEnvironment instance;
 	private Frame frame;
 	private int investorID;
+
+//initializers
+	
+	public static void main(String[] args)
+	{
+		RunCentralisedMAS.main(new String[]{"mercadoCapitais.mas2j"});
+	}
 	
 //overrides
 	

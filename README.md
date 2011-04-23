@@ -1,7 +1,9 @@
-Financial Moving Average Tester
+Financial Moving Average Tester [BETA]
 =============
 
-Open source software for testing multiple moving average strategies applied in stock markets. 
+Open source software for testing multiple moving average strategies applied in stock markets.
+
+** still under development and improvement **
 
 Overview
 --------
@@ -30,14 +32,14 @@ Installation
 
 ### Regular
 
-Download .jar package and place into a folder (e.g. `/movingAverageTester`). Under this folder create a folder called `quotes` (e.g. `/movingAverageTester/quotes`).
-Place the .xls files in it. You can [download some sample files from here](https://github.com/brunotavares/moving_average_tester/tree/master/quotes).
+Download [.jar package](https://github.com/brunotavares/moving_average_tester/tree/master/moving_average_tester.jar) and place into a folder (e.g. `/movingAverageTester`). Under this folder create a folder called `quotes` (e.g. `/movingAverageTester/quotes`).
+Place the historical stock quotes .xls files in it. You can [download some sample files from here](https://github.com/brunotavares/moving_average_tester/tree/master/quotes).
 
 ### Developer
 
 `git clone git://github.com/brunotavares/moving_average_tester.git`
 
-Import eclipse project and run, selecting `RunCentralisedMAS` as start up class.
+Import eclipse project and run, selecting `MercadoEnvironment` as start up class.
 
 Contributing
 ------------
